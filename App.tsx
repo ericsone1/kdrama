@@ -1,11 +1,11 @@
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState } from 'react';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SceneCard } from './components/SceneCard';
 import { CharacterCard } from './components/CharacterCard';
 import { Mixboard } from './components/Mixboard';
-import { analyzeScript, generateImage, generateVideo } from './services/geminiService';
-import { AspectRatio, Engine, GenerationSettings, Resolution, Scene, Character, VideoSettings } from './types';
+import { analyzeScript, generateImage } from './services/geminiService';
+import { AspectRatio, Engine, GenerationSettings, Resolution, Scene, Character } from './types';
 
 export default function App() {
   const [bulkScript, setBulkScript] = useState("");
@@ -43,14 +43,14 @@ export default function App() {
   };
 
   const genImage = async (id: string, type: 'scene' | 'character') => {
-    const list = type === 'scene' ? scenes : characters;
-    const item = list.find(x => x.id === id);
-    if (!item) return;
-
     if (type === 'scene') setScenes(prev => prev.map(s => s.id === id ? {...s, status: 'generating'} : s));
     else setCharacters(prev => prev.map(c => c.id === id ? {...c, status: 'generating'} : c));
 
     try {
+      const list = type === 'scene' ? scenes : characters;
+      const item = list.find(x => x.id === id);
+      if (!item) return;
+
       const prompt = type === 'scene' ? (item as Scene).imagePrompt : (item as Character).description;
       const url = await generateImage(prompt, settings.engine, settings.aspectRatio, settings.resolution);
       const asset = { id: crypto.randomUUID(), url, prompt, createdAt: Date.now() };
@@ -66,7 +66,7 @@ export default function App() {
   const handleBatchGen = async () => {
     setIsGenerating(true);
     for (const s of scenes) {
-        if (s.status !== 'completed') await genImage(s.id, 'scene');
+      if (s.status !== 'completed') await genImage(s.id, 'scene');
     }
     setIsGenerating(false);
   };
@@ -76,7 +76,7 @@ export default function App() {
       <header className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-800/50 backdrop-blur sticky top-0 z-50">
         <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">K-Drama Storyboard Pro</h1>
         <div className="flex gap-2">
-          <button onClick={() => setIsShareOpen(true)} className="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold">🚀 배포/공유 가이드</button>
+          <button onClick={() => setIsShareOpen(true)} className="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold">🚀 배포 안내</button>
           <button onClick={() => setIsBulkMode(true)} className="px-4 py-2 bg-gray-700 rounded-lg text-xs">새 프로젝트</button>
         </div>
       </header>
@@ -91,12 +91,20 @@ export default function App() {
             <div className="bg-gray-800 p-8 rounded-2xl border border-gray-700 text-center">
               <h2 className="text-2xl font-bold mb-4">대본 전체 입력 (최대 1만 자)</h2>
               <textarea value={bulkScript} onChange={e => setBulkScript(e.target.value)} className="w-full h-80 bg-gray-900 border border-gray-700 rounded-xl p-4 mb-4 font-mono text-sm" placeholder="여기에 대본을 붙여넣으세요..." />
-              <button onClick={handleSplit} className="px-8 py-3 bg-blue-600 rounded-full font-bold">분할 및 시작</button>
+              <button onClick={handleSplit} className="px-8 py-3 bg-blue-600 rounded-full font-bold">시작하기</button>
             </div>
           ) : (
             <>
               {isMixboard ? (
-                <Mixboard scenes={scenes} onUpdate={(id, u) => setScenes(prev => prev.map(s => s.id === id ? {...s, ...u} : s))} onDelete={id => setScenes(prev => prev.filter(s => s.id !== id))} onAdd={() => {}} onRegenerateImage={id => genImage(id, 'scene')} onGenerateVideo={() => {}} onView={() => {}} />
+                <Mixboard 
+                  scenes={scenes} 
+                  onUpdate={(id, u) => setScenes(prev => prev.map(s => s.id === id ? {...s, ...u} : s))} 
+                  onDelete={id => setScenes(prev => prev.filter(s => s.id !== id))} 
+                  onAdd={() => {}} 
+                  onRegenerateImage={id => genImage(id, 'scene')} 
+                  onGenerateVideo={() => {}} 
+                  onView={() => {}} 
+                />
               ) : (
                 <div className="space-y-6">
                   <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
@@ -117,7 +125,17 @@ export default function App() {
                         <button onClick={handleBatchGen} disabled={isGenerating} className="px-6 py-2 bg-green-600 rounded-lg font-bold">{isGenerating ? "생성 중..." : "이미지 전체 생성 🚀"}</button>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
-                        {scenes.map(s => <SceneCard key={s.id} scene={s} isTableView={false} onRetry={id => genImage(id, 'scene')} onGenerateVideo={() => {}} onViewImage={() => {}} onDownload={() => {}} />)}
+                        {scenes.map(s => (
+                          <SceneCard 
+                            key={s.id} 
+                            scene={s} 
+                            onRetry={id => genImage(id, 'scene')} 
+                            isTableView={false}
+                            onGenerateVideo={() => {}}
+                            onViewImage={() => {}}
+                            onDownload={() => {}}
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
@@ -131,12 +149,11 @@ export default function App() {
       {isShareOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]" onClick={() => setIsShareOpen(false)}>
           <div className="bg-gray-800 p-8 rounded-2xl max-w-md w-full border border-gray-700" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">배포 및 공유 안내</h2>
+            <h2 className="text-xl font-bold mb-4">Vercel 배포 완료 가이드</h2>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li>1. 깃허브(GitHub)에 이 모든 파일을 업로드합니다.</li>
-              <li>2. Vercel 사이트에서 해당 저장소를 연결합니다.</li>
-              <li>3. 환경 변수(Environment Variables)에 API_KEY를 등록합니다.</li>
-              <li>4. 생성된 주소를 친구들에게 공유하세요!</li>
+              <li>1. 404 에러가 뜨면 Vercel Settings에서 <b>Framework Preset</b>이 <b>Vite</b>인지 확인하세요.</li>
+              <li>2. <b>Environment Variables</b>에 <b>API_KEY</b>를 추가해야 AI가 작동합니다.</li>
+              <li>3. 깃허브에서 <b>빨간색 X</b>가 <b>초록색 체크</b>로 바뀌면 배포 성공입니다!</li>
             </ul>
             <button onClick={() => setIsShareOpen(false)} className="w-full mt-6 py-3 bg-blue-600 rounded-lg font-bold">확인</button>
           </div>
