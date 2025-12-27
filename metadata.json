@@ -1,0 +1,9 @@
+
+{
+  "name": "K-Modern Storyboard Pro",
+  "description": "스크립트를 분석하여 고품질 K-드라마 스토리보드를 생성하고 관리하는 전문 도구입니다.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
