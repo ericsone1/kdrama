@@ -26,6 +26,7 @@ export default function App() {
   });
 
   const handleSplit = () => {
+    if (!bulkScript.trim()) return alert("대본을 입력해주세요.");
     const parts = bulkScript.match(/[\s\S]{1,3000}/g) || [bulkScript];
     setScriptParts(parts);
     setIsBulkMode(false);
@@ -38,7 +39,8 @@ export default function App() {
       setScenes(res.scenes);
       setCharacters(res.characters);
     } catch (e) {
-      alert("분석 중 오류 발생");
+      console.error(e);
+      alert("분석 중 오류가 발생했습니다. API 키를 확인해주세요.");
     }
     setIsAnalyzing(false);
   };
@@ -70,7 +72,9 @@ export default function App() {
   const handleBatchGen = async () => {
     setIsGenerating(true);
     for (const s of scenes) {
-      if (s.status !== 'completed') await genImage(s.id, 'scene');
+      if (s.status !== 'completed') {
+        await genImage(s.id, 'scene');
+      }
     }
     setIsGenerating(false);
   };
@@ -81,7 +85,7 @@ export default function App() {
         <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">K-Drama Storyboard Pro</h1>
         <div className="flex gap-2">
           <button onClick={() => setIsShareOpen(true)} className="px-4 py-2 bg-green-600 rounded-lg text-xs font-bold">🚀 가이드</button>
-          <button onClick={() => setIsBulkMode(true)} className="px-4 py-2 bg-gray-700 rounded-lg text-xs">새 프로젝트</button>
+          <button onClick={() => { setIsBulkMode(true); setScenes([]); setCharacters([]); }} className="px-4 py-2 bg-gray-700 rounded-lg text-xs">새 프로젝트</button>
         </div>
       </header>
 
@@ -123,41 +127,44 @@ export default function App() {
                 />
               ) : (
                 <div className="space-y-6">
-                  <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center">
-                    <p className="text-sm text-gray-400">{scriptParts.length}개 파트로 나뉨</p>
+                  <div className="bg-gray-800 p-4 rounded-xl flex justify-between items-center border border-gray-700">
+                    <p className="text-sm text-gray-400">{scriptParts.length}개 파트로 분할됨</p>
                     <button 
                       onClick={handleAnalyze} 
                       disabled={isAnalyzing} 
-                      className="px-6 py-2 bg-indigo-600 rounded-lg font-bold"
+                      className="px-6 py-2 bg-indigo-600 rounded-lg font-bold hover:bg-indigo-500 transition-colors disabled:opacity-50"
                     >
                       {isAnalyzing ? "분석 중..." : "✨ AI 스토리보드 추출"}
                     </button>
                   </div>
                   
                   {characters.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4">
-                      {characters.map(c => (
-                        <CharacterCard 
-                          key={c.id} 
-                          character={c} 
-                          onGenerate={id => genImage(id, 'character')} 
-                          onView={() => {}} 
-                          onUpdate={(id, u) => setCharacters(prev => prev.map(x => x.id === id ? {...x, ...u} : x))} 
-                        />
-                      ))}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">주요 인물</h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        {characters.map(c => (
+                          <CharacterCard 
+                            key={c.id} 
+                            character={c} 
+                            onGenerate={id => genImage(id, 'character')} 
+                            onView={() => {}} 
+                            onUpdate={(id, u) => setCharacters(prev => prev.map(x => x.id === id ? {...x, ...u} : x))} 
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {scenes.length > 0 && (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-bold">장면 리스트 ({scenes.length})</h3>
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">장면 구성 ({scenes.length})</h3>
                         <button 
                           onClick={handleBatchGen} 
                           disabled={isGenerating} 
-                          className="px-6 py-2 bg-green-600 rounded-lg font-bold"
+                          className="px-6 py-2 bg-green-600 rounded-lg font-bold hover:bg-green-500 transition-colors disabled:opacity-50 text-sm"
                         >
-                          {isGenerating ? "생성 중..." : "이미지 전체 생성 🚀"}
+                          {isGenerating ? "이미지 생성 중..." : "이미지 전체 자동 생성 🚀"}
                         </button>
                       </div>
                       <div className="grid grid-cols-3 gap-4">
@@ -187,11 +194,12 @@ export default function App() {
           <div className="bg-gray-800 p-8 rounded-2xl max-w-md w-full border border-gray-700" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">Vercel 배포 완료 가이드</h2>
             <ul className="space-y-4 text-sm text-gray-400">
-              <li>1. 404 에러가 뜨면 Vercel Settings에서 <b>Framework Preset</b>이 <b>Vite</b>인지 확인하세요.</li>
-              <li>2. <b>Environment Variables</b>에 <b>API_KEY</b>를 추가해야 AI가 작동합니다.</li>
-              <li>3. 깃허브에서 <b>초록색 체크</b>가 나타나면 성공입니다!</li>
+              <li>1. Vercel 프로젝트 설정에서 <b>Environment Variables</b> 메뉴를 찾으세요.</li>
+              <li>2. <b>API_KEY</b>라는 이름으로 사용자님의 Gemini API 키를 추가하세요.</li>
+              <li>3. 키를 추가한 후 프로젝트를 다시 <b>Redeploy</b> 해야 정상 작동합니다.</li>
+              <li>4. 현재 화면이 보인다면 빌드는 성공한 것입니다!</li>
             </ul>
-            <button onClick={() => setIsShareOpen(false)} className="w-full mt-6 py-3 bg-blue-600 rounded-lg font-bold">확인</button>
+            <button onClick={() => setIsShareOpen(false)} className="w-full mt-6 py-3 bg-blue-600 rounded-lg font-bold">확인 완료</button>
           </div>
         </div>
       )}
