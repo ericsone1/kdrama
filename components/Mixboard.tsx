@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Scene } from '../types';
+import { Scene } from './types';
 
 // Updated Mixboard component to include missing prop definitions to match App.tsx usage
 export const Mixboard: React.FC<{

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GenerationSettings } from '../types';
+import { GenerationSettings } from './types';
 
 export const SettingsPanel: React.FC<{
   settings: GenerationSettings;

@@ -1,10 +1,10 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { Engine, Resolution, AspectRatio, AnalysisResult, VideoSettings } from "../types";
+import { Engine, Resolution, AspectRatio, AnalysisResult, VideoSettings } from "./types";
 
 const getAI = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found.");
+  const apiKey = localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY;
+  if (!apiKey) throw new Error("API Key not found. Please set your Gemini API key first.");
   return new GoogleGenAI({ apiKey });
 };
 
@@ -103,7 +103,8 @@ export const generateVideo = async (imageBase64: string, prompt: string, setting
   }
 
   const uri = operation.response?.generatedVideos?.[0]?.video?.uri;
-  const res = await fetch(`${uri}&key=${process.env.API_KEY}`);
+  const apiKey = localStorage.getItem('GEMINI_API_KEY') || process.env.API_KEY;
+  const res = await fetch(`${uri}&key=${apiKey}`);
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 };

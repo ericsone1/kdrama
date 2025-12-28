@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Character } from '../types';
+import { Character } from './types';
 
 // Added missing props to CharacterCard to resolve type mismatch errors in App.tsx
 export const CharacterCard: React.FC<{

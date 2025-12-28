@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Scene } from '../types';
+import { Scene } from './types';
 
 // Updated SceneCard component props to include all properties passed from App.tsx
 export const SceneCard: React.FC<{

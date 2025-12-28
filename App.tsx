@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { SettingsPanel } from './components/SettingsPanel';
-import { SceneCard } from './components/SceneCard';
-import { CharacterCard } from './components/CharacterCard';
-import { Mixboard } from './components/Mixboard';
-import { analyzeScript, generateImage } from './services/geminiService';
+import React, { useState, useEffect } from 'react';
+import { SettingsPanel } from './SettingsPanel';
+import { SceneCard } from './SceneCard';
+import { CharacterCard } from './CharacterCard';
+import { Mixboard } from './Mixboard';
+import { analyzeScript, generateImage } from './geminiService';
 import { AspectRatio, Engine, GenerationSettings, Resolution, Scene, Character } from './types';
 
 export default function App() {
@@ -16,6 +16,9 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMixboard, setIsMixboard] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [tempApiKey, setTempApiKey] = useState('');
   
   const [settings, setSettings] = useState<GenerationSettings>({
     aspectRatio: AspectRatio.LANDSCAPE,
@@ -24,6 +27,34 @@ export default function App() {
     targetSceneCount: 20,
     totalParts: 0
   });
+
+  // 컴포넌트 마운트 시 로컬스토리지에서 API 키 로드
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('GEMINI_API_KEY');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+    }
+  }, []);
+
+  // API 키 저장 함수
+  const handleSaveApiKey = () => {
+    if (!tempApiKey.trim()) {
+      alert('API 키를 입력해주세요.');
+      return;
+    }
+    localStorage.setItem('GEMINI_API_KEY', tempApiKey.trim());
+    setApiKey(tempApiKey.trim());
+    setTempApiKey('');
+    setIsApiKeyModalOpen(false);
+    alert('API 키가 저장되었습니다!');
+  };
+
+  // API 키 삭제 함수
+  const handleRemoveApiKey = () => {
+    localStorage.removeItem('GEMINI_API_KEY');
+    setApiKey('');
+    alert('API 키가 삭제되었습니다.');
+  };
 
   const handleSplit = () => {
     if (!bulkScript.trim()) return alert("대본을 입력해주세요.");
@@ -125,7 +156,7 @@ export default function App() {
             disabled={isGenerating} 
             isMixboardMode={isMixboard} 
             setMixboardMode={setIsMixboard} 
-            onConnectKey={() => (window as any).aistudio?.openSelectKey()} 
+            onConnectKey={() => setIsApiKeyModalOpen(true)} 
           />
         </aside>
 
@@ -245,6 +276,78 @@ export default function App() {
               </div>
             </div>
             <button onClick={() => setIsShareOpen(false)} className="w-full mt-6 py-3 bg-blue-600 rounded-lg font-bold hover:bg-blue-500 transition-colors">확인했습니다</button>
+          </div>
+        </div>
+      )}
+    </div>
+
+      {/* API 키 입력 모달 */}
+      {isApiKeyModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100]" onClick={() => setIsApiKeyModalOpen(false)}>
+          <div className="bg-gray-800 p-8 rounded-2xl max-w-md w-full border border-gray-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4 text-blue-400">🔑 Gemini API 키 설정</h2>
+            
+            {apiKey ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-900/30 rounded-lg border border-green-700">
+                  <p className="text-green-300 text-sm">✅ API 키가 저장되어 있습니다</p>
+                  <p className="text-gray-400 text-xs mt-1">키: {apiKey.substring(0, 10)}...</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleRemoveApiKey} 
+                    className="flex-1 py-2 bg-red-600 rounded-lg font-bold hover:bg-red-500 transition-colors text-sm"
+                  >
+                    키 삭제
+                  </button>
+                  <button 
+                    onClick={() => setIsApiKeyModalOpen(false)} 
+                    className="flex-1 py-2 bg-gray-600 rounded-lg font-bold hover:bg-gray-500 transition-colors text-sm"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-yellow-900/30 rounded-lg border border-yellow-700">
+                  <p className="text-yellow-300 text-sm">⚠️ API 키가 필요합니다</p>
+                  <p className="text-gray-400 text-xs mt-1">Google AI Studio에서 Gemini API 키를 발급받으세요</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold mb-2">API 키 입력</label>
+                  <input 
+                    type="password"
+                    value={tempApiKey}
+                    onChange={e => setTempApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p>• <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-blue-400 hover:underline">Google AI Studio</a>에서 API 키 발급</p>
+                  <p>• 키는 브라우저에만 저장되며 외부로 전송되지 않습니다</p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleSaveApiKey} 
+                    className="flex-1 py-3 bg-blue-600 rounded-lg font-bold hover:bg-blue-500 transition-colors"
+                    disabled={!tempApiKey.trim()}
+                  >
+                    저장
+                  </button>
+                  <button 
+                    onClick={() => setIsApiKeyModalOpen(false)} 
+                    className="flex-1 py-3 bg-gray-600 rounded-lg font-bold hover:bg-gray-500 transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
